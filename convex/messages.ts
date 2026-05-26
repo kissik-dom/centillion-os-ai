@@ -7,7 +7,6 @@ export const list = query({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
-    // Verify user owns this conversation
     const conv = await ctx.db.get(args.conversationId);
     if (!conv || conv.userId !== userId) return [];
     const messages = await ctx.db
@@ -36,7 +35,6 @@ export const send = mutation({
       content: args.content,
       createdAt: Date.now(),
     });
-    // Update conversation timestamp and title if first message
     const msgCount = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
@@ -54,6 +52,8 @@ export const addAssistant = mutation({
   args: {
     conversationId: v.id("conversations"),
     content: v.string(),
+    modelUsed: v.optional(v.string()),
+    taskType: v.optional(v.string()),
   },
   returns: v.id("messages"),
   handler: async (ctx, args) => {
@@ -66,6 +66,8 @@ export const addAssistant = mutation({
       role: "assistant",
       content: args.content,
       createdAt: Date.now(),
+      modelUsed: args.modelUsed,
+      taskType: args.taskType,
     });
     await ctx.db.patch(args.conversationId, { lastMessageAt: Date.now() });
     return id;
