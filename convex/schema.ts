@@ -8,6 +8,7 @@ const schema = defineSchema({
     userId: v.id("users"),
     title: v.string(),
     lastMessageAt: v.number(),
+    preferredModel: v.optional(v.string()),
   })
     .index("by_user", ["userId", "lastMessageAt"]),
   messages: defineTable({
@@ -15,6 +16,8 @@ const schema = defineSchema({
     role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
     content: v.string(),
     createdAt: v.number(),
+    modelUsed: v.optional(v.string()),
+    taskType: v.optional(v.string()),
   })
     .index("by_conversation", ["conversationId", "createdAt"]),
 });

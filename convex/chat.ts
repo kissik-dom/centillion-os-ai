@@ -1,112 +1,38 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
+import { routeAndChat, MODEL_REGISTRY } from "./modelRouter";
 
 /**
- * Centillion AI Chat Backend — 100% FREE
- * Uses Groq API free tier (Llama 3.3 70B) — 14,400 req/day
- * Fallback: HuggingFace Inference API (free, no key needed)
+ * Centillion AI Chat Backend — Smart Model Router
+ * Auto-selects the best open-source LLM for each task.
+ * 6 models: DeepSeek-R1, Llama 3.3 70B, Llama 3.1 8B, Gemma 2, Mixtral, Phi-3.5
+ * Fallback chain: if primary model fails, auto-routes to next best.
  */
 
-declare const process: { env: Record<string, string | undefined> };
+const SYSTEM_PROMPT = `You are Centillion AI — the Royal Kissi Kingdom's sovereign intelligence system.
 
-// Groq API — free tier, fast inference
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-
-async function chatWithGroq(
-  messages: { role: string; content: string }[],
-): Promise<string> {
-  const groqKey = process.env.GROQ_API_KEY;
-  
-  if (groqKey) {
-    const response = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${groqKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages,
-        max_tokens: 4096,
-        temperature: 0.7,
-        top_p: 0.9,
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json() as { choices: { message: { content: string } }[] };
-      return data.choices[0]?.message?.content || "No response generated.";
-    }
-    
-    // If rate limited, fall through to HF
-    const errorText = await response.text();
-    console.error("Groq error:", errorText);
-  }
-
-  // Fallback: HuggingFace Inference API (free, no key)
-  return chatWithHuggingFace(messages);
-}
-
-async function chatWithHuggingFace(
-  messages: { role: string; content: string }[],
-): Promise<string> {
-  const prompt = messages
-    .map((m) => {
-      if (m.role === "system") return `<|system|>\n${m.content}<|end|>`;
-      if (m.role === "user") return `<|user|>\n${m.content}<|end|>`;
-      return `<|assistant|>\n${m.content}<|end|>`;
-    })
-    .join("\n") + "\n<|assistant|>\n";
-
-  const hfToken = process.env.HF_API_KEY;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (hfToken) {
-    headers.Authorization = `Bearer ${hfToken}`;
-  }
-
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/microsoft/Phi-3.5-mini-instruct",
-    {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 2048,
-          temperature: 0.7,
-          return_full_text: false,
-        },
-      }),
-    },
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`HF API error: ${err}`);
-  }
-
-  const data = await response.json() as { generated_text: string }[];
-  return data[0]?.generated_text?.trim() || "I couldn't generate a response. Please try again.";
-}
-
-const SYSTEM_PROMPT = `You are Centillion AI — the Royal Kissi Kingdom's intelligent assistant, powered by open-source AI.
+You are powered by the Centillion Smart Model Router, which auto-selects the best open-source LLM for each task. You have access to:
+- DeepSeek-R1 (reasoning, math, research)
+- Llama 3.3 70B (general, code, creative)
+- Llama 3.1 8B Instant (fast responses, long context)
+- Gemma 2 9B (code, reasoning, math)
+- Mixtral 8x7B (general, creative, code)
 
 Your personality:
-- Bold, confident, direct, and thorough
+- Bold, confident, direct, thorough
 - You use markdown formatting for clarity
-- You are part of the Centillion OS ecosystem (Social, Music, Stream/TV, Royal Bank, Shield, UGC Marketplace)
+- You are the core intelligence of the Centillion OS ecosystem
 
-Key capabilities:
-- Deep reasoning and analysis
-- Code generation and debugging
-- Creative writing and content creation
-- Research assistance
+Capabilities:
+- Deep reasoning and chain-of-thought analysis
+- Code generation, debugging, and architecture
+- Creative writing, content creation, storytelling
+- Research, data analysis, and reporting
+- Mathematical computation and proofs
 - Multi-language support
 - Task planning and execution
 
-Respond helpfully and accurately. If you don't know something, say so rather than guessing.`;
+Always respond accurately and completely. Use your full knowledge.`;
 
 export const sendMessage = action({
   args: {
@@ -117,12 +43,17 @@ export const sendMessage = action({
         content: v.string(),
       }),
     ),
+    preferredModel: v.optional(v.string()),
   },
-  returns: v.string(),
-  handler: async (_ctx, { userMessage, conversationHistory }) => {
+  returns: v.object({
+    content: v.string(),
+    modelUsed: v.string(),
+    taskType: v.string(),
+  }),
+  handler: async (_ctx, { userMessage, conversationHistory, preferredModel }) => {
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...conversationHistory.slice(-10).map((m) => ({
+      ...conversationHistory.slice(-20).map((m) => ({
         role: m.role,
         content: m.content,
       })),
@@ -130,10 +61,19 @@ export const sendMessage = action({
     ];
 
     try {
-      return await chatWithGroq(messages);
+      const result = await routeAndChat(messages, preferredModel);
+      return {
+        content: result.response,
+        modelUsed: result.modelUsed,
+        taskType: result.taskType,
+      };
     } catch (error) {
       console.error("Chat error:", error);
-      return "I encountered an error. Please try again in a moment.";
+      return {
+        content: "All models are currently unavailable. Please try again in a moment.",
+        modelUsed: "none",
+        taskType: "general",
+      };
     }
   },
 });
@@ -142,23 +82,59 @@ export const webSearch = action({
   args: {
     query: v.string(),
   },
-  returns: v.string(),
+  returns: v.object({
+    content: v.string(),
+    modelUsed: v.string(),
+    taskType: v.string(),
+  }),
   handler: async (_ctx, { query }) => {
-    // Use Groq with a search-oriented prompt
     const messages = [
       {
         role: "system",
         content:
-          "You are a research assistant. Answer the user's question with detailed, accurate information. Cite sources when possible.",
+          "You are a research assistant. Answer the user's question with detailed, accurate information. Provide comprehensive analysis.",
       },
       { role: "user", content: query },
     ];
 
     try {
-      return await chatWithGroq(messages);
+      const result = await routeAndChat(messages, "deepseek-r1");
+      return {
+        content: result.response,
+        modelUsed: result.modelUsed,
+        taskType: "research",
+      };
     } catch (error) {
       console.error("Search error:", error);
-      return "Search failed. Please try again.";
+      return {
+        content: "Search failed. Please try again.",
+        modelUsed: "none",
+        taskType: "research",
+      };
     }
+  },
+});
+
+export const listModels = action({
+  args: {},
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      name: v.string(),
+      provider: v.string(),
+      strengths: v.array(v.string()),
+      speed: v.string(),
+      license: v.string(),
+    }),
+  ),
+  handler: async () => {
+    return MODEL_REGISTRY.map((m) => ({
+      id: m.id,
+      name: m.name,
+      provider: m.provider,
+      strengths: m.strengths,
+      speed: m.speed,
+      license: m.license,
+    }));
   },
 });
