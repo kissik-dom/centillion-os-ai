@@ -64,7 +64,7 @@ function SidebarNav() {
           <Button
             onClick={handleNew}
             variant="outline"
-            className="w-full justify-start gap-2 border-[rgba(255,255,255,0.08)] hover:bg-[#1A1A24] hover:border-[#E91E8C]/30"
+            className="w-full justify-start gap-2 border-[rgba(212,175,55,0.15)] hover:bg-[#142D4A] hover:border-[#D4AF37]/30 text-[#D4AF37]"
           >
             <Plus className="size-4" />
             New Chat
@@ -124,7 +124,7 @@ function SidebarUserMenu() {
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton size="lg">
                 <Avatar className="size-8">
-                  <AvatarFallback className="bg-[#E91E8C] text-white text-sm font-medium">
+                  <AvatarFallback className="bg-[#D4AF37] text-[#0A1628] text-sm font-semibold">
                     {user?.name?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -175,10 +175,10 @@ function SidebarHeaderContent() {
         onClick={() => setOpenMobile(false)}
         className="flex items-center gap-2.5 px-2 py-1 font-semibold text-lg"
       >
-        <div className="size-8 rounded-lg bg-gradient-to-br from-[#E91E8C] to-[#C0186F] flex items-center justify-center">
-          <Sparkles className="size-4 text-white" />
+        <div className="size-8 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#8B6914] flex items-center justify-center glow-gold">
+          <Sparkles className="size-4 text-[#0A1628]" />
         </div>
-        <span>Centillion AI</span>
+        <span className="text-gradient-royal">Centillion AI</span>
       </Link>
     </SidebarHeader>
   );
