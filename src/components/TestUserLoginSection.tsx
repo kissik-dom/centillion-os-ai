@@ -1,17 +1,15 @@
-import { useAuthActions } from "@convex-dev/auth/react";
 import { FlaskConical, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 
 const TEST_USER = {
-  email: "agent-3f15af06@test.local",
-  password: "jppxDIEvPVsaYJgJo0k5q2UZQ5keTXV_",
+  email: "agent-22d33ae7@test.local",
+  password: "AZlg8oKZz8W9ix483qPG610GEIVMzlQg",
   name: "Test Agent",
 } as const;
 
 export function TestUserLoginSection() {
-  const { signIn } = useAuthActions();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,25 +22,8 @@ export function TestUserLoginSection() {
   const handleTestLogin = async () => {
     setError("");
     setLoading(true);
-
-    const formData = new FormData();
-    formData.set("email", TEST_USER.email);
-    formData.set("password", TEST_USER.password);
-    formData.set("flow", "signIn");
-
-    try {
-      await signIn("test", formData);
-    } catch {
-      formData.set("flow", "signUp");
-      formData.set("name", TEST_USER.name);
-      try {
-        await signIn("test", formData);
-      } catch {
-        setError("Failed to sign in as test user. Please try again.");
-      }
-    } finally {
-      setLoading(false);
-    }
+    setError("Authentication not yet configured.");
+    setLoading(false);
   };
 
   return (
