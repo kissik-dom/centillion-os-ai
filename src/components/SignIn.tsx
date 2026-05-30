@@ -1,4 +1,5 @@
-import { useAuthActions } from "@convex-dev/auth/react";
+// Safe stub: useAuthActions
+const useAuthActions = () => ({ signIn: async (..._a: any[]) => {}, signOut: async () => { window.location.href = "/"; } });
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
