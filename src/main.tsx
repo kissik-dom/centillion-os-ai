@@ -6,10 +6,11 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL;
+// Use env var or a placeholder so the provider always mounts
+const convexUrl = import.meta.env.VITE_CONVEX_URL || "https://placeholder.convex.cloud";
+const convex = new ConvexReactClient(convexUrl);
 
-// Stub auth adapter — always returns "not authenticated"
-// so the app renders its public routes without crashing
+// Stub auth — always returns "not authenticated"
 function useStubAuth() {
   const fetchAccessToken = useCallback(async () => null, []);
   return useMemo(
@@ -22,27 +23,12 @@ function useStubAuth() {
   );
 }
 
-function Root() {
-  if (!convexUrl) {
-    return (
-      <StrictMode>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </StrictMode>
-    );
-  }
-
-  const convex = new ConvexReactClient(convexUrl);
-  return (
-    <StrictMode>
-      <ConvexProviderWithAuth client={convex} useAuth={useStubAuth}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </ConvexProviderWithAuth>
-    </StrictMode>
-  );
-}
-
-createRoot(document.getElementById("root")!).render(<Root />);
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <ConvexProviderWithAuth client={convex} useAuth={useStubAuth}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ConvexProviderWithAuth>
+  </StrictMode>
+);
