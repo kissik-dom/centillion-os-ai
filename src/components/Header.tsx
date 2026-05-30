@@ -1,11 +1,11 @@
-import { useConvexAuth } from "convex/react";
+import { useSafeAuth } from "@/hooks/useSafeAuth";
 import { ArrowRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { APP_NAME } from "@/lib/constants";
 import { Button } from "./ui/button";
 
 export function Header() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useSafeAuth();
   const location = useLocation();
 
   const isAuthPage =
