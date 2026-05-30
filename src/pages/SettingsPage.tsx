@@ -1,4 +1,5 @@
-import { useAuthActions } from "@convex-dev/auth/react";
+// Stub: @convex-dev/auth removed
+const useAuthActions = () => ({ signIn: async (..._args: unknown[]) => {}, signOut: async () => {} });
 import { useMutation, useQuery } from "convex/react";
 import { ChevronRight, Loader2, Moon, Palette, Sun, User } from "lucide-react";
 import { useState } from "react";
