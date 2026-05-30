@@ -1,4 +1,4 @@
-import { useConvexAuth } from "convex/react";
+import { useSafeAuth } from "@/hooks/useSafeAuth";
 import { Navigate, Outlet } from "react-router-dom";
 import {
   Sidebar,
@@ -64,7 +64,7 @@ function AppSkeleton() {
 }
 
 export function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useSafeAuth();
 
   if (isLoading) {
     return <AppSkeleton />;
