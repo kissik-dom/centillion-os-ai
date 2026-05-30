@@ -1,4 +1,3 @@
-import { Authenticated, Unauthenticated } from "convex/react";
 import { ArrowRight, Brain, Code, Globe, Image, MessageSquare, Sparkles, Zap } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,10 +14,6 @@ const features = [
 export function LandingPage() {
   return (
     <>
-      <Authenticated>
-        <Navigate to="/chat" replace />
-      </Authenticated>
-      <Unauthenticated>
         <div className="min-h-screen flex flex-col">
           {/* Hero */}
           <div className="flex-1 flex flex-col items-center justify-center px-4 py-20">
@@ -66,7 +61,6 @@ export function LandingPage() {
             Centillion OS · Part of the Centillion Ecosystem
           </footer>
         </div>
-      </Unauthenticated>
     </>
   );
 }
