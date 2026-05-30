@@ -1,4 +1,4 @@
-import { useConvexAuth } from "convex/react";
+import { useSafeAuth } from "@/hooks/useSafeAuth";
 import { Navigate, Outlet } from "react-router-dom";
 import {
   Card,
@@ -42,7 +42,7 @@ function AuthFormSkeleton() {
 }
 
 export function PublicOnlyRoute() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useSafeAuth();
 
   if (isLoading) {
     return <AuthFormSkeleton />;
